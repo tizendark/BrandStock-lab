@@ -137,3 +137,15 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Qoder configuration
+.qoder/
+
+# Wireframes documentation
+wireframes/
+
+# Python extraction scripts
+extract_*.py
+
+# Figma API response files
+figma_*.json

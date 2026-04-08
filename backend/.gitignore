@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+*.js.map
+.DS_Store
+coverage/
+*.tsbuildinfo
+.eslintcache
+npm-debug.log*
