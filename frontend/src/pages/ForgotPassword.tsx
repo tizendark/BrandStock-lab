@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ArrowLeft, Package, Mail, Loader2, CheckCircle } from 'lucide-react'
 
 export default function ForgotPassword() {
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)

@@ -1,200 +1,179 @@
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react';
 import { 
-  Package, 
-  AlertTriangle, 
-  ArrowLeftRight, 
-  Plus, 
-  ArrowDownLeft, 
-  ArrowUpRight,
-  ChevronRight
-} from 'lucide-react'
-import { PageTitle } from '../components/PageTitle'
+  FiPackage, 
+  FiAlertTriangle, 
+  FiArrowRight,
+  FiTrendingUp,
+  FiTrendingDown
+} from 'react-icons/fi';
+import { PageTitle } from '../components/PageTitle';
+import { InventoryContainer } from '../components/ui/InventoryContainer';
+import { ProductCard, type Product } from '../components/products/ProductCard';
+import { ActionModal } from '../components/ui/ActionModal';
+import { MovementForm, type MovementFormData } from '../components/movements/MovementForm';
 
-// Mock data based on wireframe
-const kpiData = {
-  totalProducts: 10,
-  lowStock: 2,
-  todayMovements: 5
-}
-
-const categoryData = [
-  { name: 'Electrónica', value: 45 },
-  { name: 'Accesorios', value: 80 },
-  { name: 'Mobiliario', value: 25 },
-  { name: 'Iluminación', value: 35 },
-  { name: 'Papelería', value: 60 }
-]
-
-const recentMovements = [
-  {
-    id: 1,
-    product: 'Mouse Logitech M185',
-    type: 'Compra',
-    quantity: 20,
-    date: '2026-04-08 09:15',
-    isEntry: true
-  },
-  {
-    id: 2,
-    product: 'Silla Ergonómica Office Pro',
-    type: 'Venta',
-    quantity: 3,
-    date: '2026-04-08 10:30',
-    isEntry: false
-  },
-  {
-    id: 3,
-    product: 'Cable HDMI 2m',
-    type: 'Compra',
-    quantity: 50,
-    date: '2026-04-08 11:45',
-    isEntry: true
-  },
-  {
-    id: 4,
-    product: 'Resma Papel A4 500 hojas',
-    type: 'Venta',
-    quantity: 15,
-    date: '2026-04-08 14:20',
-    isEntry: false
-  },
-  {
-    id: 5,
-    product: 'Laptop Dell Inspiron 15',
-    type: 'Venta',
-    quantity: 2,
-    date: '2026-04-07 16:30',
-    isEntry: false
-  }
-]
+// Mock Data for Reto #7
+const mockProducts: Product[] = [
+  { id: '1', code: 'PROD-001', name: 'Laptop Dell Inspiron', stock: 5, min_stock: 10, category: 'Electrónica' },
+  { id: '2', code: 'PROD-002', name: 'Mouse Inalámbrico', stock: 45, min_stock: 15, category: 'Accesorios' },
+  { id: '3', code: 'PROD-003', name: 'Monitor 24" LG', stock: 2, min_stock: 5, category: 'Electrónica' },
+  { id: '4', code: 'PROD-004', name: 'Teclado Mecánico', stock: 20, min_stock: 10, category: 'Accesorios' },
+];
 
 export default function Dashboard() {
-  const navigate = useNavigate()
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  const maxValue = Math.max(...categoryData.map(d => d.value))
+  const handleOpenMovement = (id: string) => {
+    setSelectedProductId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProductId(null);
+  };
+
+  const handleMovementSubmit = (data: MovementFormData) => {
+    console.log('✅ Éxito: Movimiento registrado para el producto', data.productId);
+    alert(`Movimiento de ${data.type} registrado correctamente.`);
+    handleCloseModal();
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Page Header */}
       <PageTitle 
-        title="Dashboard Principal"
-        subtitle="Vista general del inventario"
+        title="Dashboard de Inventario"
+        subtitle="Monitoreo de stock y movimientos en tiempo real"
       />
 
-      {/* KPI Cards */}
+      {/* KPI Stats (Quick Overview) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Products */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Productos Activos</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiData.totalProducts}</p>
-              <p className="text-sm text-gray-500 mt-1">En catálogo</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Package className="h-6 w-6 text-blue-600" />
-            </div>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
+          <div className="p-4 bg-blue-100 text-blue-600 rounded-xl">
+            <FiPackage size={24} />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Productos</p>
+            <p className="text-2xl font-black text-gray-900">1,248</p>
           </div>
         </div>
 
-        {/* Low Stock */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Stock Bajo (&lt;10)</p>
-              <p className="text-3xl font-bold text-amber-600 mt-2">{kpiData.lowStock}</p>
-              <p className="text-sm text-gray-500 mt-1">Requieren atención</p>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <AlertTriangle className="h-6 w-6 text-amber-600" />
-            </div>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
+          <div className="p-4 bg-amber-100 text-amber-600 rounded-xl">
+            <FiAlertTriangle size={24} />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Stock Bajo</p>
+            <p className="text-2xl font-black text-amber-600">12</p>
           </div>
         </div>
 
-        {/* Today's Movements */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Movimientos Hoy</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiData.todayMovements}</p>
-              <p className="text-sm text-gray-500 mt-1">Registrados hoy</p>
-            </div>
-            <div className="p-3 bg-green-50 rounded-lg">
-              <ArrowLeftRight className="h-6 w-6 text-green-600" />
-            </div>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
+          <div className="p-4 bg-green-100 text-green-600 rounded-xl">
+            <FiTrendingUp size={24} />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Movimientos Hoy</p>
+            <p className="text-2xl font-black text-green-600">85</p>
           </div>
         </div>
       </div>
 
-      {/* Charts and Recent Movements */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Stock by Category Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Stock por Categoría</h3>
-          
-          {/* Simple Bar Chart */}
-          <div className="space-y-4">
-            {categoryData.map((category) => (
-              <div key={category.name} className="flex items-center gap-4">
-                <span className="text-sm text-gray-600 w-24 truncate">{category.name}</span>
-                <div className="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary-600 rounded-full transition-all duration-500"
-                    style={{ width: `${(category.value / maxValue) * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm font-medium text-gray-900 w-10 text-right">{category.value}</span>
-              </div>
-            ))}
-          </div>
-          
-          <p className="text-xs text-gray-500 mt-6">
-            → Visualización rápida de distribución de inventario
-          </p>
-        </div>
-
-        {/* Recent Movements */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Últimos 5 Movimientos</h3>
-          
-          <div className="space-y-4">
-            {recentMovements.map((movement) => (
-              <div key={movement.id} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                <div className={`p-2 rounded-lg ${movement.isEntry ? 'bg-green-50' : 'bg-red-50'}`}>
-                  {movement.isEntry ? (
-                    <ArrowDownLeft className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <ArrowUpRight className="h-4 w-4 text-red-600" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{movement.product}</p>
-                  <p className="text-xs text-gray-500">
-                    {movement.type} · {movement.quantity} unid. · {movement.date}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <button 
-            onClick={() => navigate('/products')}
-            className="w-full mt-6 py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Section: Product Catalog Mapping */}
+        <div className="lg:col-span-2 space-y-6">
+          <InventoryContainer 
+            title="Catálogo Rápido" 
+            subtitle="Mapeo dinámico de productos para registro veloz"
           >
-            Ver catálogo completo
-            <ChevronRight className="h-4 w-4" />
-          </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {mockProducts.map((product) => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  onAction={handleOpenMovement} 
+                />
+              ))}
+            </div>
+          </InventoryContainer>
+        </div>
+
+        {/* Sidebar: Activity/Alerts */}
+        <div className="space-y-6">
+          <InventoryContainer 
+            title="Alertas Críticas" 
+            variant="alert"
+            subtitle="Productos que requieren reposición inmediata"
+          >
+            <div className="space-y-4">
+              {mockProducts.filter(p => p.stock <= p.min_stock).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-amber-100 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <FiAlertTriangle className="text-amber-500" size={18} />
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{p.name}</p>
+                      <p className="text-[10px] text-amber-600 font-bold uppercase">Stock: {p.stock} / {p.min_stock}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleOpenMovement(p.id)}
+                    className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                  >
+                    <FiArrowRight size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </InventoryContainer>
+
+          <InventoryContainer 
+            title="Actividad Reciente" 
+            variant="info"
+            subtitle="Últimos 5 movimientos"
+          >
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-2 border-b border-blue-100 last:border-0">
+                  {i % 2 === 0 ? <FiTrendingDown className="text-red-500" /> : <FiTrendingUp className="text-green-500" />}
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-gray-900">Venta de Laptop Dell</p>
+                    <p className="text-[10px] text-gray-400">Hace {i * 10} minutos</p>
+                  </div>
+                  <p className="text-xs font-black text-gray-700">{i % 2 === 0 ? '-' : '+'}{i * 5}</p>
+                </div>
+              ))}
+            </div>
+          </InventoryContainer>
         </div>
       </div>
 
-      {/* Floating Action Button */}
-      <button 
-        onClick={() => navigate('/movements/new')}
-        className="fixed bottom-6 right-6 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 transition-colors z-50"
+      {/* Reto #7 Modal & Form Integration */}
+      <ActionModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title="Registrar Movimiento de Inventario"
+        actions={[
+          { 
+            label: 'Confirmar Movimiento', 
+            variant: 'primary', 
+            onClick: () => {
+              // Triggering form submit programmatically
+              const formSubmitBtn = document.getElementById('movement-form-submit');
+              if (formSubmitBtn) formSubmitBtn.click();
+            } 
+          }
+        ]}
       >
-        <Plus className="h-5 w-5" />
-        Nuevo Movimiento
-      </button>
+        <p className="text-sm text-gray-500 mb-6">
+          Completa los datos para actualizar el stock del producto seleccionado.
+        </p>
+        <MovementForm 
+          initialProductId={selectedProductId || ''}
+          onSubmit={handleMovementSubmit}
+        />
+      </ActionModal>
     </div>
-  )
+  );
 }
