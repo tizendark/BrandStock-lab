@@ -16,7 +16,9 @@ const sqlConfig: sql.config = {
   options: {
     encrypt: true,
     trustServerCertificate: false,
-    enableArithAbort: true
+    enableArithAbort: true,
+    connectTimeout: 30000,
+    requestTimeout: 30000
   },
   connectionTimeout: 30000
 }

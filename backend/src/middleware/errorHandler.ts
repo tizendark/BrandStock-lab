@@ -6,13 +6,19 @@ interface AppError extends Error {
 }
 
 export const errorHandler = (
-  err: AppError,
+  err: any,
   _req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
-  const statusCode = err.statusCode || 500
-  const message = err.isOperational ? err.message : 'Internal Server Error'
+  let statusCode = err.statusCode || 500
+  let message = err.isOperational ? err.message : 'Internal Server Error'
+
+  // Manejo específico de Timeouts de SQL Server
+  if (err.message?.includes('Timeout') || err.code === 'ETIMEOUT') {
+    statusCode = 504 // Gateway Timeout
+    message = 'La base de datos está tardando demasiado en responder. Por favor, reintenta.'
+  }
 
   console.error(`[ERROR] ${err.message}`, {
     statusCode,
