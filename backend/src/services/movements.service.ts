@@ -15,6 +15,22 @@ export const getByProduct = async (productId: number) => {
   return await MovementsModel.getMovementsByProduct(productId)
 }
 
+export const getRecent = async () => {
+  return await MovementsModel.getRecentMovements(5)
+}
+
+/**
+ * Creates a new movement and updates the product stock accordingly.
+ * 
+ * Stock validation logic:
+ * - For 'salida' (outgoing) movements: validates that the product has sufficient stock
+ *   before allowing the movement. Throws an error if stock < quantity.
+ * - For 'entrada' (incoming) movements: no stock validation needed, stock is increased.
+ * 
+ * After creating the movement, the product stock is updated:
+ * - 'entrada': stock increases by the movement quantity
+ * - 'salida': stock decreases by the movement quantity
+ */
 export const create = async (data: {
   productId: number; type: string; quantity: number;
   reason: string; notes?: string; userId: number
@@ -26,7 +42,7 @@ export const create = async (data: {
   }
 
   // Validate stock for outgoing movements
-  if (data.type === 'out' && product.stock < data.quantity) {
+  if (data.type === 'salida' && product.stock < data.quantity) {
     throw new ApiError(400, `Insufficient stock. Available: ${product.stock}, Requested: ${data.quantity}`)
   }
 
@@ -34,7 +50,7 @@ export const create = async (data: {
   const movement = await MovementsModel.createMovement(data)
 
   // Update product stock
-  const newStock = data.type === 'in' 
+  const newStock = data.type === 'entrada' 
     ? product.stock + data.quantity 
     : product.stock - data.quantity
 

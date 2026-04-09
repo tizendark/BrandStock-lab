@@ -2,6 +2,8 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import { errorHandler } from './middleware/errorHandler'
+import authRouter from './routes/auth.routes'
+import apiRouter from './routes/index'
 
 const app = express()
 
@@ -18,16 +20,9 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev')) // Logging de requests
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() })
-})
-
 // Rutas API
-app.use('/api/auth', require('./routes/auth.routes'))
-app.use('/api/products', require('./routes/products.routes'))
-app.use('/api/movements', require('./routes/movements.routes'))
-app.use('/api/dashboard', require('./routes/dashboard.routes'))
+app.use('/api/auth', authRouter)
+app.use('/api/v1', apiRouter)
 
 // Ruta base
 app.get('/', (req, res) => {

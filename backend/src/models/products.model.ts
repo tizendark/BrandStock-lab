@@ -1,17 +1,72 @@
 import { sql, getPool } from '../config/database'
 
-export const getAllProducts = async () => {
+interface GetAllProductsParams {
+  page?: number
+  limit?: number
+  search?: string
+  category?: string
+}
+
+interface PaginationResult {
+  products: unknown[]
+  total: number
+}
+
+export const getAllProducts = async (params: GetAllProductsParams = {}): Promise<PaginationResult> => {
   const pool = await getPool()
-  const result = await pool.request()
-    .query('SELECT * FROM Products ORDER BY createdAt DESC')
-  return result.recordset
+  const page = params.page || 1
+  const limit = params.limit || 10
+  const offset = (page - 1) * limit
+
+  // Build dynamic WHERE clause for count query
+  const whereConditions: string[] = []
+  const countRequest = pool.request()
+
+  if (params.search) {
+    whereConditions.push("(name LIKE @search OR sku LIKE @search)")
+    countRequest.input('search', sql.NVarChar, `%${params.search}%`)
+  }
+
+  if (params.category) {
+    whereConditions.push("category = @category")
+    countRequest.input('category', sql.NVarChar, params.category)
+  }
+
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+
+  // Get total count
+  const countResult = await countRequest.query(`SELECT COUNT(*) as total FROM Products ${whereClause}`)
+  const total = countResult.recordset[0].total
+
+  // Build data query with same WHERE conditions
+  const dataRequest = pool.request()
+    .input('offset', sql.Int, offset)
+    .input('limit', sql.Int, limit)
+
+  if (params.search) {
+    dataRequest.input('search', sql.NVarChar, `%${params.search}%`)
+  }
+
+  if (params.category) {
+    dataRequest.input('category', sql.NVarChar, params.category)
+  }
+
+  const dataResult = await dataRequest.query(`
+    SELECT * FROM Products 
+    ${whereClause}
+    ORDER BY createdAt DESC 
+    OFFSET @offset ROWS 
+    FETCH NEXT @limit ROWS ONLY
+  `)
+
+  return {
+    products: dataResult.recordset,
+    total
+  }
 }
 
 export const getProductById = async (id: number) => {
-  const pool = await getPool()
-  const result = await pool.request()
-    .input('id', sql.Int, id)
-    .query('SELECT * FROM Products WHERE id = @id')
+  const result = await sql.query`SELECT * FROM Products WHERE id = ${id}`
   return result.recordset[0] || null
 }
 
@@ -19,20 +74,20 @@ export const createProduct = async (data: {
   name: string; sku: string; description?: string;
   category: string; price: number; stock: number; minStock: number
 }) => {
-  const pool = await getPool()
-  const result = await pool.request()
-    .input('name', sql.NVarChar, data.name)
-    .input('sku', sql.NVarChar, data.sku)
-    .input('description', sql.NVarChar, data.description || null)
-    .input('category', sql.NVarChar, data.category)
-    .input('price', sql.Decimal(10, 2), data.price)
-    .input('stock', sql.Int, data.stock)
-    .input('minStock', sql.Int, data.minStock)
-    .query(`
-      INSERT INTO Products (name, sku, description, category, price, stock, minStock, createdAt)
-      OUTPUT INSERTED.*
-      VALUES (@name, @sku, @description, @category, @price, @stock, @minStock, GETDATE())
-    `)
+  const result = await sql.query`
+    INSERT INTO Products (name, sku, description, category, price, stock, minStock, createdAt)
+    OUTPUT INSERTED.*
+    VALUES (
+      ${data.name}, 
+      ${data.sku}, 
+      ${data.description || null}, 
+      ${data.category}, 
+      ${data.price}, 
+      ${data.stock}, 
+      ${data.minStock}, 
+      GETDATE()
+    )
+  `
   return result.recordset[0]
 }
 
@@ -57,10 +112,12 @@ export const updateProduct = async (id: number, data: Record<string, unknown>) =
   return result.recordset[0] || null
 }
 
-export const deleteProduct = async (id: number) => {
-  const pool = await getPool()
-  const result = await pool.request()
-    .input('id', sql.Int, id)
-    .query('DELETE FROM Products OUTPUT DELETED.* WHERE id = @id')
+export const updateProductStatus = async (id: number, isActive: boolean) => {
+  const result = await sql.query`
+    UPDATE Products 
+    SET isActive = ${isActive}, updatedAt = GETDATE() 
+    OUTPUT INSERTED.* 
+    WHERE id = ${id}
+  `
   return result.recordset[0] || null
 }

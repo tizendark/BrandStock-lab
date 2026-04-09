@@ -39,10 +39,14 @@ export const updateProductSchema = Joi.object({
   minStock: Joi.number().integer().min(0)
 }).min(1)
 
+export const updateStatusSchema = Joi.object({
+  isActive: Joi.boolean().required()
+})
+
 // Movement schemas
 export const createMovementSchema = Joi.object({
   productId: Joi.number().integer().positive().required(),
-  type: Joi.string().valid('in', 'out').required(),
+  type: Joi.string().valid('entrada', 'salida').required(),
   quantity: Joi.number().integer().positive().required(),
   reason: Joi.string().max(200).required(),
   notes: Joi.string().max(500).allow('', null)

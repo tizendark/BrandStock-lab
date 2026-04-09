@@ -4,7 +4,7 @@
   "description": "Backend API for BrandStock MVP",
   "main": "bin/www.ts",
   "scripts": {
-    "dev": "nodemon --env-file=.env --exec ts-node bin/www.ts",
+    "dev": "nodemon --exec ts-node bin/www.ts",
     "build": "tsc",
     "start": "node dist/bin/www.js",
     "lint": "eslint src/**/*.ts",
