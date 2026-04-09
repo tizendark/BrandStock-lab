@@ -21,7 +21,6 @@ app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev')) // Logging de requests
 
 // Rutas API
-app.use('/api/auth', authRouter)
 app.use('/api/v1', apiRouter)
 
 // Ruta base

@@ -1,8 +1,8 @@
 import { Package, User, LogOut } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
 export const Header = () => {
-  const { state, logout } = useAppContext();
+  const { state, logout } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">

@@ -1,271 +1,159 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react';
 import { 
-  Plus, 
-  Search, 
-  ChevronDown, 
-  Edit2, 
-  Eye, 
-  ChevronLeft, 
-  ChevronRight 
-} from 'lucide-react'
-import { ActionButton } from '../components/ActionButton'
-import { PageTitle } from '../components/PageTitle'
-
-// Mock data based on wireframe
-const productsData = [
-  {
-    id: 'P001',
-    name: 'Laptop Dell Inspiron 15',
-    category: 'Electrónica',
-    stock: 5,
-    unit: 'Unidad',
-    status: 'active'
-  },
-  {
-    id: 'P002',
-    name: 'Mouse Logitech M185',
-    category: 'Accesorios',
-    stock: 45,
-    unit: 'Unidad',
-    status: 'active'
-  },
-  {
-    id: 'P003',
-    name: 'Teclado Mecánico RGB',
-    category: 'Accesorios',
-    stock: 8,
-    unit: 'Unidad',
-    status: 'active'
-  },
-  {
-    id: 'P004',
-    name: 'Monitor Samsung 24"',
-    category: 'Electrónica',
-    stock: 2,
-    unit: 'Unidad',
-    status: 'active'
-  },
-  {
-    id: 'P005',
-    name: 'Silla Ergonómica Office Pro',
-    category: 'Mobiliario',
-    stock: 12,
-    unit: 'Unidad',
-    status: 'active'
-  }
-]
-
-const categories = ['Todas las categorías', 'Electrónica', 'Accesorios', 'Mobiliario', 'Iluminación', 'Papelería']
-const statuses = ['Todos los estados', 'Activo', 'Inactivo']
+  FiPlus, 
+  FiChevronLeft, 
+  FiChevronRight,
+  FiRefreshCw,
+  FiPackage,
+  FiAlertTriangle
+} from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { ActionButton } from '../components/ActionButton';
+import { PageTitle } from '../components/PageTitle';
+import { ProductCard } from '../components/products/ProductCard';
+import { getProducts, type ProductsResponse } from '../services/productService';
+import { ActionModal } from '../components/ui/ActionModal';
+import { MovementForm, type MovementFormData } from '../components/movements/MovementForm';
+import { createMovement } from '../services/movementService';
 
 export default function Products() {
-  const navigate = useNavigate()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('Todas las categorías')
-  const [selectedStatus, setSelectedStatus] = useState('Todos los estados')
-  const [currentPage, setCurrentPage] = useState(1)
-  
-  const itemsPerPage = 5
-  const totalItems = 10 // Mock total
-  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const navigate = useNavigate();
+  const [productsData, setProductsData] = useState<ProductsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  // Filter products (mock filtering)
-  const filteredProducts = productsData.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         product.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'Todas las categorías' || product.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
-
-  const handleRowClick = (productId: string) => {
-    navigate(`/products/${productId}`)
-  }
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      'Electrónica': 'bg-blue-100 text-blue-800',
-      'Accesorios': 'bg-green-100 text-green-800',
-      'Mobiliario': 'bg-amber-100 text-amber-800',
-      'Iluminación': 'bg-yellow-100 text-yellow-800',
-      'Papelería': 'bg-purple-100 text-purple-800'
+  const loadProducts = async (page: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getProducts(page, 10);
+      setProductsData(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar productos');
+    } finally {
+      setIsLoading(false);
     }
-    return colors[category] || 'bg-gray-100 text-gray-800'
+  };
+
+  useEffect(() => {
+    loadProducts(currentPage);
+  }, [currentPage]);
+
+  const handleOpenMovement = (id: string) => {
+    setSelectedProductId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProductId(null);
+  };
+
+  const handleMovementSubmit = async (data: MovementFormData) => {
+    try {
+      await createMovement(data);
+      alert('Movimiento registrado con éxito');
+      handleCloseModal();
+      loadProducts(currentPage);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al registrar movimiento');
+    }
+  };
+
+  if (isLoading && !productsData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <FiRefreshCw className="h-10 w-10 text-primary-600 animate-spin" />
+        <p className="text-gray-500 font-medium">Cargando catálogo...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <PageTitle 
         title="Catálogo de Productos"
-        subtitle={`${totalItems} productos encontrados`}
+        subtitle={`${productsData?.pagination.total || 0} productos encontrados`}
         action={
           <ActionButton onClick={() => navigate('/products/new')}>
-            <Plus className="h-5 w-5" />
+            <FiPlus className="h-5 w-5 mr-2" />
             Nuevo Producto
           </ActionButton>
         }
       />
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por código o nombre..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">→ Autocompletado en tiempo real</p>
-          </div>
-          
-          {/* Category Filter */}
-          <div className="relative">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="appearance-none w-full md:w-48 px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-          </div>
-          
-          {/* Status Filter */}
-          <div className="relative">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="appearance-none w-full md:w-48 px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-            >
-              {statuses.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-          </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">
+          <FiAlertTriangle />
+          <p>{error}</p>
+          <button onClick={() => loadProducts(currentPage)} className="ml-auto font-bold underline">Reintentar</button>
         </div>
+      )}
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {productsData?.products.map((product) => (
+          <ProductCard 
+            key={product.id} 
+            product={product} 
+            onAction={handleOpenMovement} 
+          />
+        ))}
       </div>
 
-      {/* Products Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Código</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Nombre</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Categoría</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stock</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Unidad</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredProducts.map((product) => (
-                <tr 
-                  key={product.id} 
-                  onClick={() => handleRowClick(product.id)}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {product.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {product.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(product.category)}`}>
-                      {product.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {product.stock}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {product.unit}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        onClick={() => navigate(`/products/${product.id}/edit`)}
-                        className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => navigate(`/products/${product.id}`)}
-                        className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        title="Ver detalle"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {productsData?.products.length === 0 && !isLoading && (
+        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
+          <FiPackage className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">No hay productos</h3>
+          <p className="text-gray-500">Comienza agregando un nuevo producto al catálogo.</p>
         </div>
+      )}
 
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems}
+      {/* Pagination */}
+      {productsData && productsData.pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-sm text-gray-500">
+            Página <span className="font-bold text-gray-900">{currentPage}</span> de {productsData.pagination.totalPages}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2">
             <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-gray-100 transition-colors"
             >
-              <ChevronLeft className="h-4 w-4" />
-              Anterior
+              <FiChevronLeft />
             </button>
-            
-            <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
-                    currentPage === page 
-                      ? 'bg-primary-600 text-white' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-            
             <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={() => setCurrentPage(p => Math.min(productsData.pagination.totalPages, p + 1))}
+              disabled={currentPage === productsData.pagination.totalPages}
+              className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-gray-100 transition-colors"
             >
-              Siguiente
-              <ChevronRight className="h-4 w-4" />
+              <FiChevronRight />
             </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Note */}
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-        <p className="text-xs text-blue-700">
-          <strong>→ Interacciones:</strong> Click en fila completa abre detalle del producto. Botones de edición y vista disponibles en la columna de acciones.
-        </p>
-      </div>
+      <ActionModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title="Registrar Movimiento"
+        actions={[
+          { 
+            label: 'Confirmar', 
+            variant: 'primary', 
+            onClick: () => document.getElementById('movement-form-submit')?.click() 
+          }
+        ]}
+      >
+        <MovementForm 
+          initialProductId={selectedProductId || ''}
+          onSubmit={handleMovementSubmit}
+        />
+      </ActionModal>
     </div>
-  )
+  );
 }

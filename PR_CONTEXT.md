@@ -50,6 +50,16 @@ name NVARCHAR(50) UNIQUE NOT NULL
 created_at DATETIME2 DEFAULT GETDATE()
 ```
 
+#### Users
+```sql
+id INT IDENTITY PRIMARY KEY
+name NVARCHAR(100) NOT NULL
+email NVARCHAR(100) UNIQUE NOT NULL
+password NVARCHAR(MAX) NOT NULL
+role NVARCHAR(20) DEFAULT 'employee'
+createdAt DATETIME2 DEFAULT GETDATE()
+```
+
 ---
 
 ## 🔌 Configuración MCP
@@ -174,17 +184,39 @@ backend/
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | /api/health | No | Server health check |
-| POST | /api/auth/login | No | User login (returns JWT) |
-| POST | /api/auth/register | No | User registration |
-| GET | /api/products | JWT | List all products |
-| GET | /api/products/:id | JWT | Get product by ID |
-| POST | /api/products | JWT | Create product |
-| PUT | /api/products/:id | JWT | Update product |
-| DELETE | /api/products/:id | JWT | Delete product |
-| GET | /api/movements | JWT | List all movements |
-| GET | /api/movements/product/:productId | JWT | Movements by product |
-| POST | /api/movements | JWT | Create movement (updates stock) |
+| GET | /api/v1/health | No | Server health check |
+| POST | /api/v1/auth/login | No | User login (returns JWT) |
+| POST | /api/v1/auth/register | No | User registration |
+| GET | /api/v1/products | No | List all products (Public) |
+| GET | /api/v1/products/:id | No | Get product by ID (Public) |
+| POST | /api/v1/products | JWT | Create product |
+| PUT | /api/v1/products/:id | JWT | Update product |
+| DELETE | /api/v1/products/:id | JWT | Delete product |
+| GET | /api/v1/movements | JWT | List all movements |
+| GET | /api/v1/movements/recent | JWT | Get 5 recent movements |
+| POST | /api/v1/movements | JWT | Create movement (updates stock) |
+| GET | /api/v1/dashboard/stats | JWT | Get dashboard KPIs |
+
+---
+
+## 🔒 Implementación de Autenticación (JWT)
+
+### Backend
+- **Middleware (`auth.ts`)**: Valida el token JWT en el header `Authorization: Bearer <token>`. Adjunta `req.user` al objeto de solicitud.
+- **Controller (`auth.controller.ts`)**: Maneja el flujo de Login y Registro.
+- **Service (`auth.service.ts`)**: Lógica de negocio para autenticación. Usa `bcrypt` para el hash de contraseñas y `jsonwebtoken` para generar tokens (payload: `{id, email, role}`).
+- **Model (`auth.model.ts`)**: Consultas parametrizadas a la tabla `Users` en Azure SQL.
+- **Seguridad**:
+  - Contraseñas hasheadas con `bcrypt`.
+  - Rutas sensibles protegidas por el middleware de autenticación.
+  - Variables de entorno (`JWT_SECRET`) para la firma de tokens.
+
+### Frontend
+- **AuthContext (`AuthContext.tsx`)**: Gestiona el estado global del usuario y el token. Proporciona métodos `login`, `logout` y `register`.
+- **Persistencia**: El token y los datos del usuario se almacenan en `localStorage`.
+- **ProtectedRoute (`ProtectedRoute.tsx`)**: Componente de orden superior que redirige a `/login` si el usuario no está autenticado.
+- **Intercepción de API**: `apiFetch` incluye automáticamente el header `Authorization` si el token existe en `localStorage`.
+- **Página de Login**: Formulario con manejo de estados de carga, errores (limpieza automática tras 3 segundos) y redirección automática tras éxito.
 
 ### Backend Dependencies
 
@@ -275,3 +307,60 @@ frontend/
 | tailwindcss | ^4.2.2 | Utility-first CSS framework |
 | typescript | ~6.0.2 | Static typing |
 | vite | ^8.0.4 | Build tool |
+
+---
+
+## Frontend Implementation (Session 32 - Reto #7)
+
+### New Components
+The following dynamic components were added to the `src/components/` directory:
+
+| Path | Component | Description |
+|------|-----------|-------------|
+| `src/components/ui/InventoryContainer.tsx` | `InventoryContainer` | Reusable section wrapper with `default`, `alert`, and `info` variants. |
+| `src/components/products/ProductCard.tsx` | `ProductCard` | Displays product details (code, name, stock, min_stock) with stock status badges. |
+| `src/components/ui/ActionModal.tsx` | `ActionModal` | Reusable modal with dynamic actions, backdrop blur, and scroll lock. |
+| `src/components/movements/MovementForm.tsx` | `MovementForm` | Form with local state to handle stock movements (entrada, salida, merma). |
+
+### Core Features (Reto #7)
+
+| Feature | Description |
+|---------|-------------|
+| **Dynamic Mapping** | `Dashboard.tsx` now maps `mockProducts` to `ProductCard` components dynamically. |
+| **State Management** | Local states for form handling (`useState`) and modal visibility control. |
+| **Validation** | Form-level validation for required fields before submission (logged to console). |
+| **Icon Integration** | Switched to `react-icons/fi` for a consistent, professional look. |
+
+### Technical Improvements & Bug Fixes
+- **Dependencies**: Fixed missing `react`, `react-dom`, and `@types` in `package.json`.
+- **TypeScript**: Resolved `verbatimModuleSyntax` errors by using `type` imports and fixed `any` types in handlers.
+- **Port Management**: Resolved `EADDRINUSE` conflict for port 3080 by identifying and killing orphaned backend processes.
+- **Build Quality**: Achieved 100% success rate in `npm run build` with zero TypeScript errors or warnings.
+
+---
+
+## Frontend Implementation (Session 33 - Reto #8)
+
+### API Integration
+Implemented a robust communication layer between Frontend and Backend:
+
+| Component | Description |
+|-----------|-------------|
+| `src/lib/api.ts` | Centralized `apiFetch` client with environment variable support and generic response typing. |
+| `src/services/` | Modular services for `Dashboard`, `Products`, and `Movements` using the `apiFetch` client. |
+| `src/vite-env.d.ts` | Added TypeScript definitions for `import.meta.env.VITE_API_URL`. |
+
+### Core Features (Reto #8)
+
+| Feature | Description |
+|---------|-------------|
+| **Real Data Sync** | Replaced all mocks in `Dashboard` and `Products` with real data from Azure SQL API. |
+| **UX/UI States** | Implemented `isLoading` spinners and error handling with "Retry" functionality in main views. |
+| **Real Movements** | `MovementForm` now performs `POST` requests, updating the stock in real-time. |
+| **Pagination** | `Products` page now supports server-side pagination (10 items per page). |
+
+### Environment Configuration
+Created `.env` file for the frontend to manage the API base URL:
+```env
+VITE_API_URL=http://localhost:3080/api/v1
+```

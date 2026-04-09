@@ -1,26 +1,41 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Package } from 'lucide-react'
+import { Eye, EyeOff, Package, AlertCircle } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { login, state } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (state.isAuthenticated) {
+      navigate('/')
+    }
+  }, [state.isAuthenticated, navigate])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     
-    // TODO: Implementar validación real con backend Express.js + SQL Server
-    // Por ahora, cualquier email/contraseña redirige al dashboard (según wireframe)
-    setTimeout(() => {
-      setIsLoading(false)
+    try {
+      await login(formData)
       navigate('/')
-    }, 1000)
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión. Verifique sus credenciales.')
+      // UX: Limpiar mensaje de error tras 3 segundos
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -41,6 +56,12 @@ export default function Login() {
 
         {/* Formulario */}
         <div className="bg-white py-8 px-6 shadow-lg rounded-2xl border border-gray-100">
+          {error && (
+            <div className="mb-6 flex items-center gap-3 p-4 text-sm text-red-700 bg-red-50 rounded-xl border border-red-100 animate-in fade-in slide-in-from-top-2">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Campo Email */}
             <div>

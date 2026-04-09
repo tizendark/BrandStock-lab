@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import productsRouter from './products.routes';
 import movementsRouter from './movements.routes';
 import dashboardRouter from './dashboard.routes';
+import authRouter from './auth.routes';
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.get('/health', (_req: Request, res: Response) => {
   });
 });
 
+router.use('/auth', authRouter);
 router.use('/products', productsRouter);
 router.use('/movements', movementsRouter);
 router.use('/dashboard', dashboardRouter);
