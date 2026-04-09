@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API for BrandStock MVP",
   "main": "bin/www.ts",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "nodemon --exec ts-node bin/www.ts",
     "build": "tsc",
