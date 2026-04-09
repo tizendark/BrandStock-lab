@@ -221,3 +221,57 @@ npm run dev    # Development with nodemon + ts-node
 npm run build  # Compile TypeScript to dist/
 npm start      # Run compiled JS from dist/
 ```
+
+---
+
+## Frontend Implementation (Session 31 - Reto #6)
+
+### Architecture
+The frontend is built with React 18 and follows a component-based architecture with global state management:
+```
+Main → AppProvider (Context) → Router → Layouts → Pages → Components
+```
+
+### Directory Structure
+```
+frontend/
+├── src/
+│   ├── components/                # Reusable UI components (Tailwind-first)
+│   │   ├── ActionButton.tsx       # Standard buttons (primary, secondary, danger)
+│   │   ├── PageTitle.tsx          # Standard page headers
+│   │   └── Header.tsx             # Application top bar
+│   ├── context/
+│   │   └── AppContext.tsx         # Global state (Auth, User, Loading)
+│   ├── layouts/
+│   │   └── MainLayout.tsx         # Sidebar + Header wrapper
+│   ├── pages/
+│   │   ├── App/
+│   │   │   └── App.tsx            # Main router and auth protection
+│   │   ├── Dashboard.tsx          # Main metrics view
+│   │   ├── Products.tsx           # Inventory catalog
+│   │   ├── NewProduct.tsx         # Product creation form
+│   │   ├── NewMovement.tsx        # Stock movement form
+│   │   └── Login.tsx              # Authentication page
+│   ├── main.tsx                   # Entry point with AppProvider
+│   └── index.css                  # Tailwind CSS v4 configuration & theme
+```
+
+### Core Features (Reto #6)
+
+| Feature | Description |
+|---------|-------------|
+| **Global State** | `AppContext` manages user session, auth status, and global loading states. |
+| **Tailwind v4** | Theme extension using `@theme` in CSS for brand colors and fonts. |
+| **Reusable UI** | `ActionButton` and `PageTitle` ensure UI consistency across all modules. |
+| **Auth Guard** | Protected routes in `App.tsx` using global authentication state. |
+
+### Frontend Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| react | ^18.3.1 | UI Library |
+| react-router-dom | ^7.14.0 | Navigation & Routing |
+| lucide-react | ^1.7.0 | Icon set |
+| tailwindcss | ^4.2.2 | Utility-first CSS framework |
+| typescript | ~6.0.2 | Static typing |
+| vite | ^8.0.4 | Build tool |

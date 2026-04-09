@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   ChevronRight
 } from 'lucide-react'
+import { PageTitle } from '../components/PageTitle'
 
 // Mock data based on wireframe
 const kpiData = {
@@ -75,10 +76,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Principal</h1>
-        <p className="text-gray-600 mt-1">Vista general del inventario</p>
-      </div>
+      <PageTitle 
+        title="Dashboard Principal"
+        subtitle="Vista general del inventario"
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

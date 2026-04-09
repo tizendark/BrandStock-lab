@@ -9,6 +9,8 @@ import {
   ChevronLeft, 
   ChevronRight 
 } from 'lucide-react'
+import { ActionButton } from '../components/ActionButton'
+import { PageTitle } from '../components/PageTitle'
 
 // Mock data based on wireframe
 const productsData = [
@@ -94,19 +96,16 @@ export default function Products() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
-          <p className="text-gray-600 mt-1">{totalItems} productos encontrados</p>
-        </div>
-        <button 
-          onClick={() => navigate('/products/new')}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          <Plus className="h-5 w-5" />
-          Nuevo Producto
-        </button>
-      </div>
+      <PageTitle 
+        title="Catálogo de Productos"
+        subtitle={`${totalItems} productos encontrados`}
+        action={
+          <ActionButton onClick={() => navigate('/products/new')}>
+            <Plus className="h-5 w-5" />
+            Nuevo Producto
+          </ActionButton>
+        }
+      />
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
