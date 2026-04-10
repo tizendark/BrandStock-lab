@@ -1,10 +1,66 @@
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Build output
 dist/
-.env
-*.log
 *.js.map
-.DS_Store
-coverage/
-*.tsbuildinfo
-.eslintcache
+*.d.ts.map
+
+# Environment variables (NEVER commit these!)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+logs/
+*.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Coverage
+coverage/
+.nyc_output
+
+# Cache
+.eslintcache
+.node_repl_history
+.parcel-cache
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Azure
+.azure/
+*.publishsettings
+
+# Database files (if using local DB)
+*.db
+*.sqlite
+
+# Temp files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Test files
+*.test.js
+*.spec.js
+__tests__/
