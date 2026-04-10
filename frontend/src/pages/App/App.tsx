@@ -6,12 +6,9 @@ import Products from '../Products'
 import NewProduct from '../NewProduct'
 import NewMovement from '../NewMovement'
 import MainLayout from '../../layouts/MainLayout'
-import { useAuth } from '../../context/AuthContext'
 import ProtectedRoute from '../../components/auth/ProtectedRoute'
 
 function App() {
-  const { state } = useAuth();
-
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
