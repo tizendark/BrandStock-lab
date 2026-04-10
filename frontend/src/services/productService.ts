@@ -27,8 +27,7 @@ export const getProducts = async (page = 1, limit = 50, search?: string, categor
   if (category) url += `&category=${encodeURIComponent(category)}`;
   if (status) url += `&status=${encodeURIComponent(status)}`;
   
-  const response = await apiFetch<{ success: boolean, data: ProductsResponse }>(url);
-  return response.data;
+  return await apiFetch<ProductsResponse>(url);
 };
 
 export const createProduct = async (productData: ProductData): Promise<Product> => {

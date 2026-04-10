@@ -29,6 +29,5 @@ export interface DashboardData extends DashboardStats {
 }
 
 export const getDashboardData = async (): Promise<DashboardData> => {
-  const response = await apiFetch<{ success: boolean, data: DashboardData }>('/dashboard/stats');
-  return response.data;
+  return await apiFetch<DashboardData>('/dashboard/stats');
 };
