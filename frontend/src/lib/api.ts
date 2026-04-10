@@ -8,7 +8,7 @@ export const apiFetch = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const baseUrl = import.meta.env.VITE_API_URL;
+  const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_DOMAIN || 'http://localhost:3000';
   const url = `${baseUrl}${endpoint}`;
 
   // Get token from localStorage
