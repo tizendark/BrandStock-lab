@@ -88,6 +88,9 @@ Thumbs.db
 users1.sql
 login_extracted.txt
 
+# Qoder
+.qoder/
+
 # Python scripts (temporary extraction tools)
 extract_*.py
 figma_*.json

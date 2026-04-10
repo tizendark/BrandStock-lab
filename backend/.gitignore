@@ -63,4 +63,4 @@ tmp/
 # Test files
 *.test.js
 *.spec.js
-__tests__/
+# __tests__/  # ← COMENTADO para permitir que GitHub Actions vea las pruebas
