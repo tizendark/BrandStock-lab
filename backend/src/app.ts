@@ -8,15 +8,31 @@ import apiRouter from './routes/index'
 
 const app = express()
 
-// CORS config para frontend en Vite
+// CORS config para frontend en Vite y GitHub Pages
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://tizendark.github.io',
+      'https://brandstock-app-ddcgedc9fag8b4ha.brazilsouth-01.azurewebsites.net'
+    ]
+    // Permitir requests sin origen (Postman, curl, etc.) o orígenes permitidos
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      console.log(`CORS bloqueado para origen: ${origin}`)
+      callback(new Error('Not allowed by CORS'), false)
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }
 
 // Middlewares
 app.use(cors(corsOptions))
+app.options('*', cors(corsOptions)) // Habilitar preflight para todos los endpoints
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev')) // Logging de requests
