@@ -21,11 +21,17 @@
   --shadow-brand: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
-@layer base {
-  body {
-    background-color: #f9fafb; /* Gray 50 */
-    color: #111827; /* Gray 900 */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+@layer components {
+  .input-field {
+    @apply w-full px-4 py-2 bg-[#F3F3F5] border border-[#D1D5DC] rounded-lg text-[#717182] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all;
+  }
+  .label-field {
+    @apply block text-sm font-medium text-[#0A0A0A] mb-1.5;
+  }
+  .btn-primary {
+    @apply w-full py-2.5 px-4 bg-[#155DFC] hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all text-sm;
+  }
+  .btn-secondary {
+    @apply w-full py-2 px-4 bg-transparent hover:bg-gray-50 text-[#155DFC] font-medium transition-all text-sm;
   }
 }

@@ -5,6 +5,7 @@ interface GetAllProductsParams {
   limit?: number
   search?: string
   category?: string
+  status?: string
 }
 
 interface PaginationResult {
@@ -32,6 +33,11 @@ export const getAllProducts = async (params: GetAllProductsParams = {}): Promise
     countRequest.input('category', sql.NVarChar, params.category)
   }
 
+  if (params.status) {
+    whereConditions.push("status = @status")
+    countRequest.input('status', sql.NVarChar, params.status)
+  }
+
   const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
 
   // Get total count
@@ -49,6 +55,10 @@ export const getAllProducts = async (params: GetAllProductsParams = {}): Promise
 
   if (params.category) {
     dataRequest.input('category', sql.NVarChar, params.category)
+  }
+
+  if (params.status) {
+    dataRequest.input('status', sql.NVarChar, params.status)
   }
 
   const dataResult = await dataRequest.query(`

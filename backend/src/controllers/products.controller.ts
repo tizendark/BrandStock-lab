@@ -12,8 +12,9 @@ export const getAll = async (req: AuthRequest, res: Response, next: NextFunction
     const limit = parseInt(req.query.limit as string) || 10
     const search = req.query.search as string | undefined
     const category = req.query.category as string | undefined
+    const status = req.query.status as string | undefined
 
-    const result = await ProductsService.getAll({ page, limit, search, category })
+    const result = await ProductsService.getAll({ page, limit, search, category, status })
     res.json({ success: true, data: result })
   } catch (error) {
     next(error)

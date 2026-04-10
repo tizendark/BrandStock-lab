@@ -6,6 +6,7 @@ interface GetAllParams {
   limit?: number
   search?: string
   category?: string
+  status?: string
 }
 
 interface PaginationResult {
@@ -22,7 +23,7 @@ export const getAll = async (params: GetAllParams = {}): Promise<PaginationResul
   const page = params.page || 1
   const limit = params.limit || 10
 
-  const { products, total } = await ProductsModel.getAllProducts({ page, limit, search: params.search, category: params.category })
+  const { products, total } = await ProductsModel.getAllProducts({ page, limit, search: params.search, category: params.category, status: params.status })
 
   const totalPages = Math.ceil(total / limit)
 

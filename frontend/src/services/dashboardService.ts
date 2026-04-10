@@ -18,10 +18,17 @@ export interface RecentMovement {
   productSku: string;
 }
 
+export interface CategoryStock {
+  category: string;
+  totalStock: number;
+}
+
 export interface DashboardData extends DashboardStats {
   recentMovements: RecentMovement[];
+  stockByCategory: CategoryStock[];
 }
 
 export const getDashboardData = async (): Promise<DashboardData> => {
-  return apiFetch<DashboardData>('/dashboard/stats');
+  const response = await apiFetch<{ success: boolean, data: DashboardData }>('/dashboard/stats');
+  return response.data;
 };

@@ -21,6 +21,19 @@ export const getStats = async () => {
 }
 
 /**
+ * @description Retrieves stock totals grouped by category
+ */
+export const getStockByCategory = async () => {
+  const pool = await getPool()
+  const result = await pool.request().query(`
+    SELECT category, SUM(stock) as totalStock
+    FROM Products
+    GROUP BY category
+  `)
+  return result.recordset
+}
+
+/**
  * @description Retrieves the most recent movements with product information
  * @param limit Number of recent movements to return (default: 5)
  */

@@ -3,7 +3,7 @@ import { FiChevronDown } from 'react-icons/fi';
 
 export interface MovementFormData {
   type: 'entrada' | 'salida' | 'merma';
-  productId: string;
+  productId: number;
   quantity: number;
   reason: string;
   notes: string;
@@ -11,10 +11,10 @@ export interface MovementFormData {
 
 interface MovementFormProps {
   onSubmit: (data: MovementFormData) => void;
-  initialProductId?: string;
+  initialProductId?: number;
 }
 
-export const MovementForm = ({ onSubmit, initialProductId = '' }: MovementFormProps) => {
+export const MovementForm = ({ onSubmit, initialProductId = 0 }: MovementFormProps) => {
   const [formData, setFormData] = useState<MovementFormData>({
     type: 'entrada',
     productId: initialProductId,

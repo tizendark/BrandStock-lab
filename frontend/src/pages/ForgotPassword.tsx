@@ -38,29 +38,37 @@ export default function ForgotPassword() {
   // Vista de éxito después de enviar
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9FAFB] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[448px] w-full space-y-12">
+          {/* Logo y Título */}
+          <div className="text-center space-y-4">
+            <div className="mx-auto h-16 w-16 flex items-center justify-center text-[#1E2939]">
+              <Package className="h-16 w-16" />
+            </div>
+            <h1 className="text-[30px] font-semibold text-[#101828] tracking-tight">BrandStock</h1>
+          </div>
+
+          <div className="bg-white p-8 border border-[#D1D5DC] rounded-[10px] space-y-6 text-center">
             <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-green-100 mb-4">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">¡Correo enviado!</h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <h2 className="text-[20px] font-semibold text-[#101828]">¡Correo enviado!</h2>
+            <p className="text-sm text-[#4A5565]">
               Si el email <strong>{email}</strong> existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.
             </p>
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="text-xs text-[#6A7282]">
               Revisa tu bandeja de entrada y spam. El enlace expirará en 24 horas.
             </p>
-          </div>
-          
-          <div className="mt-6">
-            <Link
-              to="/login"
-              className="btn-primary flex items-center justify-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver al login
-            </Link>
+            
+            <div className="pt-6">
+              <Link
+                to="/login"
+                className="btn-primary flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al login
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -68,47 +76,45 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9FAFB] py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[448px] w-full space-y-12">
         {/* Logo y Título */}
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-xl bg-primary-600 text-white mb-4">
-            <Package className="h-10 w-10" />
+        <div className="text-center space-y-4">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center text-[#1E2939]">
+            <Package className="h-16 w-16" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">BrandStock</h1>
+          <h1 className="text-[30px] font-semibold text-[#101828] tracking-tight">BrandStock</h1>
         </div>
 
-        {/* Botón Volver */}
-        <div>
+        {/* Contenido Principal */}
+        <div className="bg-white p-8 border border-[#D1D5DC] rounded-[10px] space-y-6">
+          {/* Botón Volver */}
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#0A0A0A] hover:text-[#155DFC] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver al login
           </Link>
-        </div>
 
-        {/* Contenido Principal */}
-        <div className="bg-white py-8 px-6 shadow-sm rounded-2xl border border-gray-100">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="space-y-2">
+            <h2 className="text-[20px] font-semibold text-[#101828] leading-tight">
               ¿Olvidaste tu contraseña?
             </h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[#4A5565] leading-relaxed">
               Ingresa tu email corporativo y te enviaremos un enlace para restablecer tu contraseña.
             </p>
           </div>
 
           {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
+            <div className="space-y-2">
               <label htmlFor="email" className="label-field">
                 Email corporativo
               </label>
-              <div className="relative mt-1">
+              <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-4 w-4 text-[#99A1AF]" />
                 </div>
                 <input
                   id="email"
@@ -123,7 +129,7 @@ export default function ForgotPassword() {
                 />
               </div>
               {error && (
-                <p className="mt-2 text-sm text-red-600">{error}</p>
+                <p className="mt-1 text-xs text-red-600">{error}</p>
               )}
             </div>
 
@@ -144,17 +150,17 @@ export default function ForgotPassword() {
           </form>
 
           {/* Nota de ayuda */}
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <p className="text-xs text-center text-gray-500">
+          <div className="pt-6 border-t border-[#E5E7EB]">
+            <p className="text-xs text-center text-[#6A7282]">
               ¿No tienes acceso? Contacta al área de IT para obtener tus credenciales.
             </p>
           </div>
         </div>
 
         {/* Nota técnica */}
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-          <p className="text-xs text-blue-700">
-            <strong>→ Flujo de seguridad:</strong> El sistema valida el email en el backend y envía un token temporal vía SMTP. No se revela si el email existe para prevenir la enumeración de usuarios.
+        <div className="bg-[#F3F4F6] border border-[#D1D5DC] rounded p-3">
+          <p className="text-[12px] text-[#4A5565] font-bold">
+            → Flujo de seguridad: <span className="font-normal">Sistema valida email en backend y envía token temporal vía SMTP. No se revela si el email existe para prevenir la enumeración de usuarios.</span>
           </p>
         </div>
       </div>

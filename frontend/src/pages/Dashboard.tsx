@@ -17,7 +17,7 @@ import { createMovement } from '../services/movementService';
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +44,8 @@ export default function Dashboard() {
     loadData();
   }, []);
 
-  const handleOpenMovement = (id: string) => {
+  const handleOpenMovement = (id: number) => {
+    console.log('Opening movement for product:', id);
     setSelectedProductId(id);
     setIsModalOpen(true);
   };
@@ -208,7 +209,7 @@ export default function Dashboard() {
           Completa los datos para actualizar el stock real en la base de datos.
         </p>
         <MovementForm 
-          initialProductId={selectedProductId || ''}
+          initialProductId={selectedProductId || 0}
           onSubmit={handleMovementSubmit}
         />
       </ActionModal>

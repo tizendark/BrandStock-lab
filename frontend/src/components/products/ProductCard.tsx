@@ -2,12 +2,18 @@ import { FiPackage, FiAlertTriangle, FiArrowRight } from 'react-icons/fi';
 import { ActionButton } from '../ActionButton';
 
 export interface Product {
-  id: string;
-  code: string;
+  id: number;
+  sku: string;
   name: string;
   stock: number;
-  min_stock: number;
+  minStock: number;
   category: string;
+  price: number;
+  description?: string;
+  status: 'active' | 'inactive';
+  unit?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 interface ProductCardProps {
@@ -16,7 +22,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onAction }: ProductCardProps) => {
-  const isLowStock = product.stock <= product.min_stock;
+  const isLowStock = product.stock <= product.minStock;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -34,7 +40,7 @@ export const ProductCard = ({ product, onAction }: ProductCardProps) => {
       </div>
 
       <div className="mb-4">
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{product.code}</span>
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{product.sku}</span>
         <h3 className="text-base font-bold text-gray-900 truncate" title={product.name}>
           {product.name}
         </h3>
@@ -51,7 +57,7 @@ export const ProductCard = ({ product, onAction }: ProductCardProps) => {
         <div className="w-px h-8 bg-gray-100"></div>
         <div className="text-center flex-1">
           <p className="text-[10px] text-gray-400 font-bold uppercase">Mínimo</p>
-          <p className="text-lg font-bold text-gray-900">{product.min_stock}</p>
+          <p className="text-lg font-bold text-gray-900">{product.minStock}</p>
         </div>
       </div>
 
@@ -59,7 +65,7 @@ export const ProductCard = ({ product, onAction }: ProductCardProps) => {
         variant={isLowStock ? 'primary' : 'secondary'} 
         size="sm" 
         className="w-full justify-center"
-        onClick={() => onAction(product.id)}
+        onClick={() => onAction(product.id.toString())}
       >
         <span>Movimiento</span>
         <FiArrowRight size={14} />

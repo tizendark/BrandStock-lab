@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   ArrowDownLeft, 
@@ -6,40 +6,56 @@ import {
   Search, 
   ChevronDown, 
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Package,
+  X
 } from 'lucide-react'
+import { getProducts } from '../services/productService'
+import { createMovement } from '../services/movementService'
+import { type Product } from '../components/products/ProductCard'
 
-// Mock products for autocomplete
-const mockProducts = [
-  { id: 'P001', name: 'Laptop Dell Inspiron 15', stock: 5 },
-  { id: 'P002', name: 'Mouse Logitech M185', stock: 45 },
-  { id: 'P003', name: 'Teclado Mecánico RGB', stock: 8 },
-  { id: 'P004', name: 'Monitor Samsung 24"', stock: 2 },
-  { id: 'P005', name: 'Silla Ergonómica Office Pro', stock: 12 }
-]
-
-const reasons = ['Compra', 'Venta', 'Merma', 'Ajuste', 'Devolución']
+const reasons = {
+  entrada: ['Compra', 'Devolución', 'Ajuste'],
+  salida: ['Venta', 'Merma', 'Ajuste', 'Devolución Proveedor']
+}
 
 export default function NewMovement() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [showProductDropdown, setShowProductDropdown] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [serverError, setServerError] = useState<string | null>(null)
   
   const [formData, setFormData] = useState({
     type: 'entrada' as 'entrada' | 'salida',
-    product: null as { id: string; name: string; stock: number } | null,
+    product: null as Product | null,
     quantity: '',
     reason: '',
     notes: ''
   })
 
-  const filteredProducts = mockProducts.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.id.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.length > 1 && !formData.product) {
+        setIsSearching(true)
+        try {
+          const res = await getProducts(1, 10, searchQuery)
+          setProducts(res.products)
+          setShowProductDropdown(true)
+        } catch (err) {
+          console.error('Error searching products:', err)
+        } finally {
+          setIsSearching(false)
+        }
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, formData.product])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -72,31 +88,38 @@ export default function NewMovement() {
   }
 
   const handleConfirm = async () => {
+    if (!formData.product) return
     setIsLoading(true)
+    setServerError(null)
     try {
-      // TODO: Implementar llamada real al backend
-      // POST /api/movements
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await createMovement({
+        productId: formData.product.id,
+        type: formData.type,
+        quantity: parseInt(formData.quantity),
+        reason: formData.reason,
+        notes: formData.notes
+      })
       navigate('/')
-    } catch (error) {
-      console.error('Error creating movement:', error)
+    } catch (err: any) {
+      console.error('Error creating movement:', err)
+      setServerError(err.message || 'Error al registrar el movimiento.')
+      setShowConfirmation(false)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleCancel = () => {
-    navigate('/')
+  const selectProduct = (product: Product) => {
+    setFormData({ ...formData, product })
+    setSearchQuery(`${product.sku} - ${product.name}`)
+    setShowProductDropdown(false)
+    if (errors.product) setErrors({ ...errors, product: '' })
   }
 
-  const selectProduct = (product: typeof mockProducts[0]) => {
-    setFormData({ ...formData, product })
-    setSearchQuery(`${product.id} - ${product.name}`)
+  const clearProduct = () => {
+    setFormData({ ...formData, product: null })
+    setSearchQuery('')
     setShowProductDropdown(false)
-    // Clear quantity error when product changes
-    if (errors.quantity) {
-      setErrors({ ...errors, quantity: '' })
-    }
   }
 
   const getNewStock = () => {
@@ -105,273 +128,287 @@ export default function NewMovement() {
     if (formData.type === 'entrada') {
       return formData.product.stock + qty
     } else {
-      return formData.product.stock - qty
+      return (formData.product.stock || 0) - qty
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-[800px] mx-auto pb-10">
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Registro de Movimiento</h1>
-        <p className="text-gray-600 mt-1">Entrada o salida de productos del inventario</p>
+      <div className="mb-10">
+        <h1 className="text-[30px] font-semibold text-[#101828] tracking-tight">Registro de Movimiento</h1>
+        <p className="text-[#4A5565] mt-1 text-sm">Entrada o salida de productos del inventario</p>
       </div>
 
+      {serverError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-3">
+          <AlertCircle className="h-4 w-4" />
+          {serverError}
+        </div>
+      )}
+
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-        <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-[10px] border border-[#D1D5DC] shadow-sm overflow-hidden">
+        <div className="p-8 space-y-8">
           {/* Tipo de movimiento */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Tipo de movimiento <span className="text-red-500">*</span>
+          <div className="space-y-4">
+            <label className="block text-sm font-semibold text-[#101828]">
+              Tipo de movimiento *
             </label>
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, type: 'entrada' })}
-                className={`flex items-center gap-3 px-4 py-3 border-2 rounded-lg transition-colors ${
+                onClick={() => setFormData({ ...formData, type: 'entrada', reason: '' })}
+                className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition-all ${
                   formData.type === 'entrada'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-[#039855] bg-green-50 text-[#039855] ring-1 ring-[#039855]'
+                    : 'border-[#D1D5DC] hover:border-gray-300'
                 }`}
               >
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  formData.type === 'entrada' ? 'border-green-500' : 'border-gray-400'
+                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                  formData.type === 'entrada' ? 'border-[#039855] bg-white' : 'border-[#D1D5DC] bg-white'
                 }`}>
-                  {formData.type === 'entrada' && <div className="w-2.5 h-2.5 rounded-full bg-green-500" />}
+                  {formData.type === 'entrada' && <div className="w-2.5 h-2.5 rounded-full bg-[#039855]" />}
                 </div>
-                <ArrowDownLeft className="h-5 w-5" />
-                <span className="font-medium">Entrada</span>
+                <div className="flex items-center gap-2">
+                  <ArrowUpRight className="h-5 w-5" />
+                  <span className="font-medium text-sm">Entrada</span>
+                </div>
               </button>
               
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, type: 'salida' })}
-                className={`flex items-center gap-3 px-4 py-3 border-2 rounded-lg transition-colors ${
+                onClick={() => setFormData({ ...formData, type: 'salida', reason: '' })}
+                className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition-all ${
                   formData.type === 'salida'
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-[#D92D20] bg-red-50 text-[#D92D20] ring-1 ring-[#D92D20]'
+                    : 'border-[#D1D5DC] hover:border-gray-300'
                 }`}
               >
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  formData.type === 'salida' ? 'border-red-500' : 'border-gray-400'
+                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                  formData.type === 'salida' ? 'border-[#D92D20] bg-white' : 'border-[#D1D5DC] bg-white'
                 }`}>
-                  {formData.type === 'salida' && <div className="w-2.5 h-2.5 rounded-full bg-red-500" />}
+                  {formData.type === 'salida' && <div className="w-2.5 h-2.5 rounded-full bg-[#D92D20]" />}
                 </div>
-                <ArrowUpRight className="h-5 w-5" />
-                <span className="font-medium">Salida</span>
+                <div className="flex items-center gap-2">
+                  <ArrowDownLeft className="h-5 w-5" />
+                  <span className="font-medium text-sm">Salida</span>
+                </div>
               </button>
             </div>
           </div>
 
-          {/* Producto */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Producto <span className="text-red-500">*</span>
+          {/* Búsqueda de producto */}
+          <div className="space-y-2 relative">
+            <label htmlFor="product" className="block text-sm font-semibold text-[#101828]">
+              Producto *
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <Search className="h-5 w-5" />
+              </div>
               <input
+                id="product"
                 type="text"
+                className={`w-full pl-10 pr-10 py-2.5 bg-[#F9FAFB] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent text-sm transition-all ${
+                  errors.product ? 'border-red-500' : 'border-[#D1D5DC]'
+                }`}
+                placeholder="Buscar por código o nombre..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value)
-                  setShowProductDropdown(true)
-                  if (formData.product) {
-                    setFormData({ ...formData, product: null })
-                  }
+                  if (formData.product) setFormData({ ...formData, product: null })
                 }}
-                onFocus={() => setShowProductDropdown(true)}
-                placeholder="Buscar por código o nombre..."
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.product ? 'border-red-500' : 'border-gray-300'
-                }`}
+                autoComplete="off"
               />
-              
-              {/* Autocomplete Dropdown */}
-              {showProductDropdown && searchQuery && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-                  {filteredProducts.length > 0 ? (
-                    filteredProducts.map((product) => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        onClick={() => selectProduct(product)}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                      >
-                        <div className="font-medium text-gray-900">{product.name}</div>
-                        <div className="text-sm text-gray-500">{product.id} · Stock: {product.stock}</div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-3 text-gray-500">No se encontraron productos</div>
-                  )}
+              {formData.product && (
+                <button
+                  type="button"
+                  onClick={clearProduct}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
+              {isSearching && (
+                <div className="absolute inset-y-0 right-10 flex items-center">
+                  <Loader2 className="h-5 w-5 text-[#155DFC] animate-spin" />
                 </div>
               )}
             </div>
-            {errors.product && (
-              <p className="mt-1 text-sm text-red-600">{errors.product}</p>
+            
+            {/* Dropdown de productos */}
+            {showProductDropdown && products.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-[#D1D5DC] rounded-lg shadow-lg max-h-60 overflow-auto">
+                {products.map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => selectProduct(product)}
+                    className="w-full text-left px-4 py-3 hover:bg-[#F9FAFB] flex justify-between items-center border-b border-[#F2F4F7] last:border-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 text-[#155DFC] rounded-lg">
+                        <Package size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#101828]">{product.name}</p>
+                        <p className="text-xs text-[#667085]">{product.sku}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-[#667085]">Stock actual</p>
+                      <p className={`text-sm font-bold ${product.stock <= product.minStock ? 'text-red-600' : 'text-[#101828]'}`}>
+                        {product.stock}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
-            <p className="mt-1 text-xs text-gray-500">
+            {errors.product && <p className="text-xs text-red-600 font-medium">{errors.product}</p>}
+            <p className="text-xs text-[#667085]">
               → Autocompletado muestra código y stock en tiempo real
             </p>
           </div>
 
           {/* Cantidad */}
-          <div>
-            <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
-              Cantidad <span className="text-red-500">*</span>
+          <div className="space-y-2">
+            <label htmlFor="quantity" className="block text-sm font-semibold text-[#101828]">
+              Cantidad *
             </label>
             <input
-              type="number"
               id="quantity"
+              type="number"
               min="1"
+              className={`w-full px-4 py-2.5 bg-[#F9FAFB] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent text-sm transition-all ${
+                errors.quantity ? 'border-red-500' : 'border-[#D1D5DC]'
+              }`}
+              placeholder="0"
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              placeholder="0"
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                errors.quantity ? 'border-red-500' : 'border-gray-300'
-              }`}
             />
-            {errors.quantity && (
-              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="h-4 w-4" />
-                {errors.quantity}
-              </p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
+            {errors.quantity && <p className="text-xs text-red-600 font-medium">{errors.quantity}</p>}
+            <p className="text-xs text-[#667085]">
               → Validación en tiempo real para salidas
             </p>
           </div>
 
           {/* Motivo */}
-          <div>
-            <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
-              Motivo <span className="text-red-500">*</span>
+          <div className="space-y-2">
+            <label htmlFor="reason" className="block text-sm font-semibold text-[#101828]">
+              Motivo *
             </label>
             <div className="relative">
               <select
                 id="reason"
+                className={`appearance-none w-full px-4 py-2.5 pr-10 bg-[#F9FAFB] border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent text-sm cursor-pointer transition-all ${
+                  errors.reason ? 'border-red-500' : 'border-[#D1D5DC]'
+                }`}
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                className={`appearance-none w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white ${
-                  errors.reason ? 'border-red-500' : 'border-gray-300'
-                }`}
               >
                 <option value="">Seleccionar motivo...</option>
-                {reasons.map((reason) => (
-                  <option key={reason} value={reason}>{reason}</option>
+                {reasons[formData.type].map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085] pointer-events-none" />
             </div>
-            {errors.reason && (
-              <p className="mt-1 text-sm text-red-600">{errors.reason}</p>
-            )}
+            {errors.reason && <p className="text-xs text-red-600 font-medium">{errors.reason}</p>}
           </div>
 
           {/* Observaciones */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-              Observaciones <span className="text-gray-400">(opcional)</span>
+          <div className="space-y-2">
+            <label htmlFor="notes" className="block text-sm font-semibold text-[#101828]">
+              Observaciones (opcional)
             </label>
             <textarea
               id="notes"
               rows={3}
+              className="w-full px-4 py-2.5 bg-[#F9FAFB] border border-[#D1D5DC] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent text-sm transition-all resize-none"
+              placeholder="Agregar notas adicionales..."
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Agregar notas adicionales..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              Confirmar Movimiento
-            </button>
-          </div>
+          {/* Summary (Stock Preview) */}
+          {formData.product && formData.quantity && (
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[10px] p-4 flex items-center justify-between">
+              <div className="text-xs text-[#64748B]">
+                Stock actual: <span className="font-bold text-[#101828]">{formData.product.stock}</span>
+              </div>
+              <div className="text-xs font-bold text-[#D0D5DD]">→</div>
+              <div className="text-xs text-[#64748B]">
+                Stock proyectado: <span className={`font-bold ${formData.type === 'entrada' ? 'text-[#039855]' : 'text-[#D92D20]'}`}>
+                  {getNewStock()}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="px-8 py-6 bg-[#F9FAFB] border-t border-[#D1D5DC] flex flex-col sm:flex-row gap-4">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex-1 px-4 py-2.5 border border-[#D1D5DC] bg-white text-sm font-semibold text-[#101828] rounded-lg hover:bg-[#F9FAFB] transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="flex-1 px-4 py-2.5 bg-[#155DFC] text-sm font-semibold text-white rounded-lg hover:bg-[#004EEB] transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            Continuar
+          </button>
         </div>
       </form>
 
-      {/* Note */}
-      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <p className="text-xs text-gray-600">
-          <strong>→ Flujo guiado:</strong> Validaciones en tiempo real previenen errores. Modal de confirmación antes de registrar.
-        </p>
-      </div>
-
       {/* Confirmation Modal */}
       {showConfirmation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirmar Movimiento</h3>
-            
-            <div className="space-y-3 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-bold text-[#101828]">Confirmar Movimiento</h2>
+              <p className="text-[#4A5565] text-sm">
+                ¿Estás seguro de registrar esta {formData.type === 'entrada' ? 'entrada' : 'salida'}?
+              </p>
+            </div>
+
+            <div className="bg-[#F9FAFB] rounded-xl p-4 space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Tipo:</span>
-                <span className={`font-medium ${formData.type === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
-                  {formData.type === 'entrada' ? 'Entrada' : 'Salida'}
-                </span>
+                <span className="text-[#667085]">Producto:</span>
+                <span className="font-bold text-[#101828]">{formData.product?.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Producto:</span>
-                <span className="font-medium">{formData.product?.name}</span>
+                <span className="text-[#667085]">Cantidad:</span>
+                <span className="font-bold text-[#101828]">{formData.quantity} unidades</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Cantidad:</span>
-                <span className="font-medium">{formData.quantity}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Motivo:</span>
-                <span className="font-medium">{formData.reason}</span>
-              </div>
-              <div className="border-t pt-3 mt-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Stock actual:</span>
-                  <span className="font-medium">{formData.product?.stock}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Nuevo stock:</span>
-                  <span className={`font-medium ${
-                    (getNewStock() || 0) < (formData.product?.stock || 0) ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {getNewStock()}
-                  </span>
-                </div>
+                <span className="text-[#667085]">Motivo:</span>
+                <span className="font-bold text-[#101828]">{formData.reason}</span>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmation(false)}
-                disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 border border-[#D1D5DC] text-[#4A5565] font-medium rounded-lg hover:bg-[#F9FAFB] transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-[#155DFC] text-white font-medium rounded-lg hover:bg-[#004EEB] transition-all flex items-center justify-center gap-2"
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Registrando...
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   'Confirmar'
                 )}
