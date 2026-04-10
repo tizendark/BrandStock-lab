@@ -11,6 +11,8 @@ export const apiFetch = async <T>(
   const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_DOMAIN || 'http://localhost:3000';
   const url = `${baseUrl}${endpoint}`;
 
+  console.log(`API Request: ${options.method || 'GET'} ${url}`);
+
   // Get token from localStorage
   const token = localStorage.getItem('token');
 
@@ -25,10 +27,18 @@ export const apiFetch = async <T>(
     headers,
   });
 
+  // Check content type before parsing as JSON
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    const text = await response.text();
+    console.error(`Non-JSON response from ${url}:`, text.substring(0, 500));
+    throw new Error(`Error de conexion con el servidor (${response.status}). Intenta mas tarde.`);
+  }
+
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.error || 'Ocurrió un error en la petición');
+    throw new Error(result.error || 'Ocurrio un error en la peticion');
   }
 
   return result.data as T;
