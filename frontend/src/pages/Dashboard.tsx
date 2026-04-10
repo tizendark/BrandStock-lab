@@ -6,6 +6,8 @@ import {
   FiTrendingDown,
   FiRefreshCw
 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { PageTitle } from '../components/PageTitle';
 import { InventoryContainer } from '../components/ui/InventoryContainer';
 import { ProductCard, type Product } from '../components/products/ProductCard';
@@ -16,6 +18,7 @@ import { getProducts } from '../services/productService';
 import { createMovement } from '../services/movementService';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -29,7 +32,7 @@ export default function Dashboard() {
     try {
       const [stats, productsRes] = await Promise.all([
         getDashboardData(),
-        getProducts(1, 4) // Solo 4 para el catálogo rápido
+        getProducts(1, 4)
       ]);
       setDashboardData(stats);
       setProducts(productsRes.products);
@@ -60,7 +63,7 @@ export default function Dashboard() {
       await createMovement(data);
       alert(`Movimiento de ${data.type} registrado correctamente.`);
       handleCloseModal();
-      loadData(); // Recargar datos para ver stock actualizado
+      loadData();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al registrar movimiento');
     }
@@ -79,13 +82,13 @@ export default function Dashboard() {
     return (
       <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-2xl mx-auto mt-10">
         <FiAlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <h2 className="text-lg font-bold text-red-900 mb-2">Error de Conexión</h2>
+        <h2 className="text-lg font-bold text-red-900 mb-2">Error de Conexion</h2>
         <p className="text-red-700 mb-6">{error}</p>
         <button 
           onClick={loadData}
           className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
         >
-          Reintentar conexión
+          Reintentar conexion
         </button>
       </div>
     );
@@ -134,8 +137,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <InventoryContainer 
-            title="Catálogo Rápido" 
-            subtitle="Mapeo dinámico de productos desde la API"
+            title="Catalogo Rapido" 
+            subtitle="Mapeo dinamico de productos desde la API"
           >
             {products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -150,7 +153,7 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300">
                 <FiPackage className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-                <p className="text-gray-500">No hay productos en el catálogo</p>
+                <p className="text-gray-500">No hay productos en el catalogo</p>
               </div>
             )}
           </InventoryContainer>
@@ -160,7 +163,7 @@ export default function Dashboard() {
           <InventoryContainer 
             title="Actividad Reciente" 
             variant="info"
-            subtitle="Últimos movimientos registrados"
+            subtitle="Ultimos movimientos registrados"
           >
             <div className="space-y-3">
               {dashboardData?.recentMovements && dashboardData.recentMovements.length > 0 ? (
@@ -189,6 +192,16 @@ export default function Dashboard() {
           </InventoryContainer>
         </div>
       </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => navigate('/movements/new')}
+        className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-all hover:scale-105 hover:shadow-xl z-50"
+        aria-label="Nuevo Movimiento"
+      >
+        <Plus className="h-5 w-5" />
+        <span className="font-medium">Nuevo Movimiento</span>
+      </button>
 
       <ActionModal
         isOpen={isModalOpen}
