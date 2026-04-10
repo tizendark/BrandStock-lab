@@ -18,7 +18,7 @@ export interface Product {
 
 interface ProductCardProps {
   product: Product;
-  onAction: (id: string) => void;
+  onAction: (id: number) => void;
 }
 
 export const ProductCard = ({ product, onAction }: ProductCardProps) => {
@@ -65,7 +65,7 @@ export const ProductCard = ({ product, onAction }: ProductCardProps) => {
         variant={isLowStock ? 'primary' : 'secondary'} 
         size="sm" 
         className="w-full justify-center"
-        onClick={() => onAction(product.id.toString())}
+        onClick={() => onAction(product.id)}
       >
         <span>Movimiento</span>
         <FiArrowRight size={14} />
