@@ -29,14 +29,8 @@ jobs:
 
       - name: Zip artifact for deployment
         run: |
-          cd backend
           sudo apt-get update && sudo apt-get install -y zip
-          # Incluir dist y package.json, NO src/
           zip -r release.zip dist/ package.json package-lock.json .env* 2>/dev/null || true
-          # Si no hay .env, crear uno mínimo para Azure
-          if [ ! -f release.zip ]; then
-            zip release.zip dist/ package.json package-lock.json
-          fi
           ls -la release.zip
         working-directory: ./backend
 
