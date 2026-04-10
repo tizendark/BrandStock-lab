@@ -8,42 +8,36 @@ import apiRouter from './routes/index'
 
 const app = express()
 
-// CORS config para frontend en Vite y GitHub Pages
-const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://tizendark.github.io',
-      'https://brandstock-app-ddcgedc9fag8b4ha.brazilsouth-01.azurewebsites.net'
-    ]
-    // Permitir requests sin origen (Postman, curl, etc.) o orígenes permitidos
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true)
-    } else {
-      console.log(`CORS bloqueado para origen: ${origin}`)
-      callback(new Error('Not allowed by CORS'), false)
-    }
+// CORS config - PERMISIVA para diagnóstico
+app.use(cors({
+  origin: function(origin, callback) {
+    // Permitir cualquier origen para diagnóstico
+    // En producción, restrict this to specific domains
+    console.log(`[CORS DEBUG] Origin: ${origin || 'no-origin'}`)
+    callback(null, true)
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
-}
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}))
+
+// Log todas las requests para diagnóstico
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`)
+  next()
+})
 
 // Middlewares
-app.use(cors(corsOptions))
-app.options('*', cors(corsOptions)) // Habilitar preflight para todos los endpoints
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-app.use(morgan('dev')) // Logging de requests
+app.use(morgan('dev'))
 
 // Servir archivos estáticos del Frontend si existe la ruta configurada
-// Útil para despliegues conjuntos en un solo App Service
 if (process.env.SERVE_FRONTEND === 'true') {
   const frontendPath = path.join(__dirname, '../../frontend/dist')
   app.use(express.static(frontendPath))
   
-  // SPA support: Cualquier ruta no-API debe devolver el index.html
   app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'))
   })
@@ -61,7 +55,7 @@ app.get('/', (req, res) => {
   })
 })
 
-// 404 handler (Solo si no estamos sirviendo el frontend)
+// 404 handler
 if (process.env.SERVE_FRONTEND !== 'true') {
   app.use('*', (req, res) => {
     res.status(404).json({ error: 'Endpoint no encontrado' })
