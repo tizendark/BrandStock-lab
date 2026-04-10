@@ -11,7 +11,6 @@ import ProtectedRoute from '../../components/auth/ProtectedRoute'
 
 function App() {
   const { state } = useAuth();
-  const { isAuthenticated } = state;
 
   return (
     <Routes>
