@@ -32,10 +32,11 @@
 | **Frontend** | React.js 18 + TypeScript + Vite + Tailwind CSS |
 | **Backend** | Express.js (Node.js 18+) - API REST |
 | **Base de Datos** | SQL Server (Azure SQL Database) |
-| **Despliegue** | Azure App Service + Azure SQL |
+| **Despliegue** | Azure App Service (Node.js 22 LTS) + Azure SQL |
 | **Control de Versiones** | Git + GitHub |
+| **CI/CD** | GitHub Actions (Build & Deploy automation) |
 | **Diseño** | Figma |
-| **IDE** | Qoder (con MCP Server para Figma) |
+| **IDE** | Trae (con MCP Server para Figma) |
 
 ---
 
@@ -62,6 +63,50 @@ createdAt DATETIME2 DEFAULT GETDATE()
 
 ---
 
+## 🚀 Despliegue y CI/CD (Reto #9)
+
+### Configuración de Azure App Service
+- **Runtime Stack**: Node.js 22 LTS (seleccionado por estabilidad y rendimiento).
+- **Deployment Center**: Integrado con GitHub Actions.
+- **Environment Variables (Azure App Settings)**:
+  - `JWT_SECRET`: Clave fija para persistencia de sesiones.
+  - `SERVE_FRONTEND`: `true` (para servir React desde Express).
+  - `VITE_API_URL`: `/api/v1` (ruta relativa para producción).
+  - `DB_*`: Credenciales de Azure SQL Database.
+
+### Pipeline de GitHub Actions (`main_brandstock-app.yml`)
+1. **Job: Build**
+   - Instalación de dependencias en `backend/`.
+   - Ejecución de `npm run build` (TypeScript compilation).
+   - Ejecución de pruebas unitarias con **Jest** (`npm test`).
+   - Compresión del artefacto (`release.zip`) incluyendo archivos compilados.
+   - Carga del artefacto para el siguiente job.
+2. **Job: Deploy**
+   - Descarga del artefacto `node-app`.
+   - Autenticación con Azure mediante Service Principal (Secrets).
+   - Despliegue del archivo `.zip` en el App Service.
+
+### Estrategia de Servido Estático
+Para optimizar costos y complejidad, el backend de Express sirve el frontend de React:
+- Middleware en `app.ts` detecta `SERVE_FRONTEND=true`.
+- Sirve archivos de `frontend/dist`.
+- Soporte para SPA (Single Page Application) redirigiendo rutas no-API al `index.html`.
+
+---
+
+## 🧪 Pruebas Unitarias (Backend)
+
+### Framework: Jest + ts-jest
+- **Ubicación**: `backend/__tests__/*.test.ts`
+- **Configuración**: `jest.config.js` con soporte para TypeScript.
+- **Cobertura inicial**:
+  - Prueba de "Health Check" (`/api/v1/health`).
+  - Prueba de integridad de la ruta base (`/`).
+  - Sanity tests para lógica de negocio.
+- **Supertest**: Utilizado para realizar peticiones HTTP simuladas a la aplicación Express sin levantar el servidor.
+
+---
+
 ## 🔌 Configuración MCP
 
 ### Figma Desktop MCP Server
@@ -73,10 +118,10 @@ createdAt DATETIME2 DEFAULT GETDATE()
 
 ## 📋 Módulos del Sistema
 
-1. **Autenticación** - Login de usuarios corporativos
-2. **Dashboard** - Panel principal con KPIs y métricas
-3. **Catálogo de Productos** - Gestión de inventario
-4. **Registro de Movimientos** - Entradas y salidas de stock
+1. **Autenticación** - Login de usuarios corporativos (JWT con clave fija)
+2. **Dashboard** - Panel principal con KPIs y métricas (React components)
+3. **Catálogo de Productos** - Gestión de inventario (CRUD dinámico)
+4. **Registro de Movimientos** - Entradas y salidas de stock (Validación en tiempo real)
 5. **Detalle de Producto** - Información completa e historial
 
 ---
@@ -133,10 +178,11 @@ createdAt DATETIME2 DEFAULT GETDATE()
 - Validación de stock en tiempo real para movimientos
 - Alertas para stock bajo (< 10 unidades)
 - Historial completo de movimientos por producto
+- Soporte para Node.js 22 LTS en producción
 
 ---
 
-## Backend Implementation (Session 29)
+## Backend Implementation (Session 29 - Reto #9)
 
 ### Architecture
 The backend follows a 3-layer architecture pattern:
@@ -147,9 +193,10 @@ Routes → Controllers → Services → Models → Azure SQL
 ### Directory Structure
 ```
 backend/
+├── __tests__/                     # Jest test files
 ├── bin/www.ts                     # Server entry point (port 3080)
 ├── src/
-│   ├── app.ts                     # Express config + CORS + middlewares
+│   ├── app.ts                     # Express config + CORS + Static Serving
 │   ├── config/database.ts         # Azure SQL connection pool (mssql)
 │   ├── controllers/
 │   │   ├── auth.controller.ts     # Login/Register handlers
@@ -176,7 +223,8 @@ backend/
 │       └── validators.ts          # Joi validation schemas
 ├── .env.example                   # Environment variable template
 ├── .gitignore
-├── package.json
+├── jest.config.js                 # Jest configuration
+├── package.json                   # Updated with engines (Node 22)
 └── tsconfig.json
 ```
 
@@ -184,7 +232,7 @@ backend/
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | /api/v1/health | No | Server health check |
+| GET | /api/v1/health | No | Server health check (Tested) |
 | POST | /api/v1/auth/login | No | User login (returns JWT) |
 | POST | /api/v1/auth/register | No | User registration |
 | GET | /api/v1/products | No | List all products (Public) |
@@ -209,7 +257,7 @@ backend/
 - **Seguridad**:
   - Contraseñas hasheadas con `bcrypt`.
   - Rutas sensibles protegidas por el middleware de autenticación.
-  - Variables de entorno (`JWT_SECRET`) para la firma de tokens.
+  - Variables de entorno (`JWT_SECRET`) fijas en Azure App Settings.
 
 ### Frontend
 - **AuthContext (`AuthContext.tsx`)**: Gestiona el estado global del usuario y el token. Proporciona métodos `login`, `logout` y `register`.
@@ -230,19 +278,22 @@ backend/
 | bcrypt | ^5.1.1 | Password hashing |
 | joi | ^17.11.0 | Request validation |
 | morgan | ^1.10.0 | HTTP request logging |
+| jest | ^29.7.0 | Testing framework |
+| supertest | ^7.0.0 | API testing tool |
 | typescript | ^5.3.0 | TypeScript compiler |
 
 ### Environment Variables Required
 ```
 PORT=3080
-NODE_ENV=development
+NODE_ENV=production
 DB_USER=brandstock-admin
 DB_PASSWORD=<your_password>
 DB_DATABASE=brandstock-db
 DB_SERVER=brandstock-server.database.windows.net
-JWT_SECRET=<your_secret>
+JWT_SECRET=<your_fixed_secret>
 JWT_EXPIRES_IN=24h
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=https://brandstock-app.azurewebsites.net
+SERVE_FRONTEND=true
 ```
 
 ### How to Run
