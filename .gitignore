@@ -85,10 +85,13 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+users1.sql
+login_extracted.txt
 
 # Python scripts (temporary extraction tools)
 extract_*.py
 figma_*.json
+find_node.py
 *.pyc
 __pycache__/
 
